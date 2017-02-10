@@ -11,6 +11,7 @@ import sys, getopt
 import ecdsa
 import binascii, hashlib
 import itertools
+import base58
 
 secp256k1curve=ecdsa.ellipticcurve.CurveFp(115792089237316195423570985008687907853269984665640564039457584007908834671663,0,7)
 secp256k1point=ecdsa.ellipticcurve.Point(secp256k1curve,0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798,0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8,0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141)
@@ -39,15 +40,27 @@ def addy(pk):
 
 POSSIBLE_LETTERS = set("ucoitsgr")
 
-for poss in itertools.permutations(POSSIBLE_LETTERS):
-    passphrase = "8ln" + "".join(poss) + "nl8"
-    privatekey = int(hashlib.sha256(passphrase.encode('utf8')).hexdigest(),16)
-    #privatekeysha = (hashlib.sha256(sys.argv[1].encode('utf8'))).hexdigest()
-    bcaddy = addy(privatekey)
-    if bcaddy == GOAL:
-        print("Success.")
-        print("Passphrase: ", passphrase)
-        print("Private Key: ", privatekey)
-        break
-    else:
-        print(passphrase,":",bcaddy)
+if len(sys.argv) != 2:
+    for poss in itertools.permutations(POSSIBLE_LETTERS):
+        passphrase = "8ln" + "".join(poss) + "nl8"
+        privatekey = int(hashlib.sha256(passphrase.encode('utf8')).hexdigest(),16)
+        #privatekeysha = (hashlib.sha256(sys.argv[1].encode('utf8'))).hexdigest()
+        bcaddy = addy(privatekey)
+        if bcaddy == GOAL:
+            print("Success.")
+            print("Passphrase: ", passphrase)
+            print("Private Key: ", privatekey)
+            break
+        else:
+            print(passphrase,":",bcaddy)
+else:
+    passphrase = sys.argv[1]
+    privatekey = hashlib.sha256(passphrase.encode('utf8')).digest()
+    privatekeyx = bytes([0x80]) + privatekey
+    privatekeyxchk = hashlib.sha256(privatekeyx).digest()
+    privatekeyxchk = hashlib.sha256(privatekeyxchk).digest()
+    privatekeyxchk = privatekeyxchk[:4]
+    privatekeyx += privatekeyxchk
+    privatekeyimportable = base58.b58encode(privatekeyx)
+    print("Passphrase: ", passphrase)
+    print("Import Private Key:", privatekeyimportable)
